@@ -1,11 +1,23 @@
-from app.schemas.query import QueryRequest, QueryResponse
-from app.schemas.contracts import PlanSpec, RunTrace, TaskResult
+"""Schema exports."""
 
+from app.schemas.contracts import (
+    AgentSpec,
+    PlanSpec,
+    RunTrace,
+    TaskResult,
+    TaskSpec,
+)
+from app.schemas.eval import EvalRequest, EvalResponse
+from app.schemas.query import QueryRequest, QueryResponse
 
 __all__ = [
-    "QueryRequest",
-    "QueryResponse",
+    "AgentSpec",
+    "EvalRequest",
+    "EvalResponse",
     "PlanSpec",
     "RunTrace",
-    "TaskResult"
+    "TaskResult",
+    "TaskSpec",
+    "QueryRequest",
+    "QueryResponse",
 ]
