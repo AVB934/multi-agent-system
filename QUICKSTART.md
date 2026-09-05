@@ -232,7 +232,7 @@ python test_query.py
 
 ### Step 1: Create Test Dataset
 
-Create `test_cases.jsonl`:
+Create `data/eval/test_cases.jsonl`:
 ```
 {"id": "1", "query": "Who is the President of the USA?"}
 {"id": "2", "query": "What is the largest planet in our solar system?"}
@@ -258,7 +258,7 @@ curl -X POST http://localhost:8000/eval \
 # Windows
 type eval_results.json
 
-# macOS/Linux  
+# macOS/Linux
 cat eval_results.json
 ```
 
@@ -266,7 +266,7 @@ Or with Python:
 ```python
 import json
 
-with open("eval_results.json") as f:
+with open("data/eval/eval_results.json") as f:
     results = json.load(f)
     print(f"Total Cases: {results['total_cases']}")
     print(f"Metrics: {json.dumps(results['metrics'], indent=2)}")

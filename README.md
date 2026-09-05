@@ -82,7 +82,7 @@ app/
     - dependencies: []
     - assigned_agent: research
     - required_tools: [llm.adk]
-  
+
   Task 2 (verify-1):
     - description: "Verify factual consistency and citation coverage"
     - dependencies: [research-1]
