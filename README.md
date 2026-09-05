@@ -102,9 +102,3 @@ The JSONL input uses one object per line:
 uv run python -m compileall -q app
 uv run python -c "import app.main; print('application import ok')"
 ```
-
-There are currently no committed automated tests. Generated databases, reports, and environment files are ignored by Git.
-
-## License
-
-No license has been selected yet. Add a `LICENSE` file before distributing the project under specific reuse terms.
