@@ -29,13 +29,22 @@ class PlannerAgent(BaseAgent):
             ]
         )
 
-    async def run(self, task: TaskSpec, context: dict[str, Any] | None = None) -> TaskResult:
+    async def run(
+        self, task: TaskSpec, context: dict[str, Any] | None = None
+    ) -> TaskResult:
         _ = context
-        return TaskResult(task_id=task.task_id, status="success", output="Plan prepared.", citations=[])
+        return TaskResult(
+            task_id=task.task_id,
+            status="success",
+            output="Plan prepared.",
+            citations=[],
+        )
 
 
 class ResearchAgent(BaseAgent):
-    async def run(self, task: TaskSpec, context: dict[str, Any] | None = None) -> TaskResult:
+    async def run(
+        self, task: TaskSpec, context: dict[str, Any] | None = None
+    ) -> TaskResult:
         ctx = context or {}
         search_tool = self.tools.get("web.search")
         llm_tool = self.tools.get("llm.adk")
@@ -51,7 +60,9 @@ class ResearchAgent(BaseAgent):
                     ),
                     user_prompt=task.description,
                 )
-                grounded_text = sanitize_untrusted_text(str(grounded.get("text", ""))).strip()
+                grounded_text = sanitize_untrusted_text(
+                    str(grounded.get("text", ""))
+                ).strip()
                 grounded_citations = [
                     sanitize_untrusted_text(str(url)).strip()
                     for url in grounded.get("citations", [])
@@ -82,7 +93,9 @@ class ResearchAgent(BaseAgent):
         claim_lines: list[str] = []
         citations: list[str] = []
         for index, item in enumerate(results, start=1):
-            page_text = await search_tool.fetch_page_text(item.url, request_id=request_id, trace_id=trace_id)
+            page_text = await search_tool.fetch_page_text(
+                item.url, request_id=request_id, trace_id=trace_id
+            )
             claim = self._extract_claim(page_text=page_text, fallback=item.snippet)
             if llm_tool is not None and getattr(llm_tool, "enabled", False):
                 try:
@@ -105,8 +118,14 @@ class ResearchAgent(BaseAgent):
             claim_lines.append(f"[{index}] {claim} (source: {item.url})")
             citations.append(item.url)
 
-        combined = "\n".join(claim_lines) if claim_lines else "No allowed search results found."
-        return TaskResult(task_id=task.task_id, status="success", output=combined, citations=citations)
+        combined = (
+            "\n".join(claim_lines)
+            if claim_lines
+            else "No allowed search results found."
+        )
+        return TaskResult(
+            task_id=task.task_id, status="success", output=combined, citations=citations
+        )
 
     def _extract_claim(self, page_text: str, fallback: str) -> str:
         safe_text = sanitize_untrusted_text(page_text).strip()
@@ -119,7 +138,9 @@ class ResearchAgent(BaseAgent):
 
 
 class VerifierAgent(BaseAgent):
-    async def run(self, task: TaskSpec, context: dict[str, Any] | None = None) -> TaskResult:
+    async def run(
+        self, task: TaskSpec, context: dict[str, Any] | None = None
+    ) -> TaskResult:
         ctx = context or {}
         citations = ctx.get("citations", [])
         draft = str(ctx.get("draft", "")).strip()
@@ -144,7 +165,7 @@ class VerifierAgent(BaseAgent):
                     system_instruction=(
                         "You are a verifier. Check for obvious contradictions and citation coverage. "
                         "Return strict JSON: "
-                        "{\"status\":\"success|failed\",\"issues\":[\"...\"]}."
+                        '{"status":"success|failed","issues":["..."]}.'
                     ),
                     user_prompt=f"Draft:\n{draft}\n\nCitations:\n{citations}",
                 )
@@ -152,8 +173,12 @@ class VerifierAgent(BaseAgent):
                 status = str(payload.get("status", "failed")).strip().lower()
                 if status not in {"success", "failed"}:
                     status = "failed"
-                message = "verification passed" if status == "success" else (
-                    "verification failed: " + ", ".join(issues or ["unknown issue"])
+                message = (
+                    "verification passed"
+                    if status == "success"
+                    else (
+                        "verification failed: " + ", ".join(issues or ["unknown issue"])
+                    )
                 )
                 return TaskResult(
                     task_id=task.task_id,

@@ -17,11 +17,16 @@ class EvalCase:
 
 
 class EvalRunner:
-    def __init__(self, orchestrator: Orchestrator) -> None:
+    def __init__(
+        self, orchestrator: Orchestrator, eval_dir: str | Path = "data/eval"
+    ) -> None:
         self.orchestrator = orchestrator
+        self.eval_dir = Path(eval_dir).resolve()
 
-    async def run(self, input_jsonl_path: str, output_report_path: str | None = None) -> dict[str, object]:
-        cases = self._load_cases(input_jsonl_path)
+    async def run(
+        self, input_jsonl_path: str, output_report_path: str | None = None
+    ) -> dict[str, object]:
+        cases = self._load_cases(self._resolve_path(input_jsonl_path))
         details: list[dict[str, object]] = []
         total_tool_calls = 0
         citation_hits = 0
@@ -36,7 +41,11 @@ class EvalRunner:
 
             tool_calls = self._count_tool_calls(response.trace.request_id)
             total_tool_calls += tool_calls
-            citation_count = len(response.json_payload.get("citations", [])) if response.json_payload else 0
+            citation_count = (
+                len(response.json_payload.get("citations", []))
+                if response.json_payload
+                else 0
+            )
             if citation_count > 0:
                 citation_hits += 1
             verification_status = (
@@ -76,7 +85,11 @@ class EvalRunner:
             "details": details,
         }
 
-        report_path = output_report_path or self._default_report_path()
+        report_path = (
+            self._resolve_path(output_report_path)
+            if output_report_path
+            else self._default_report_path()
+        )
         self._write_report(report_path, report)
         return {
             "total_cases": len(cases),
@@ -84,13 +97,14 @@ class EvalRunner:
             "report_path": report_path,
         }
 
-    def _load_cases(self, input_jsonl_path: str) -> list[EvalCase]:
-        path = Path(input_jsonl_path)
+    def _load_cases(self, path: Path) -> list[EvalCase]:
         if not path.exists():
-            raise FileNotFoundError(f"input jsonl not found: {input_jsonl_path}")
+            raise FileNotFoundError(f"input jsonl not found: {path}")
 
         cases: list[EvalCase] = []
-        for index, raw in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        for index, raw in enumerate(
+            path.read_text(encoding="utf-8").splitlines(), start=1
+        ):
             line = raw.strip()
             if not line:
                 continue
@@ -127,7 +141,9 @@ class EvalRunner:
 
     def _count_tool_calls(self, request_id: str) -> int:
         try:
-            web_tool = self.orchestrator._default_factory.available_tools.get("web.search")  # noqa: SLF001
+            web_tool = self.orchestrator._default_factory.available_tools.get(
+                "web.search"
+            )  # noqa: SLF001
             gateway = getattr(web_tool, "gateway", None)
             audit_logs = getattr(gateway, "audit_logs", [])
             return sum(1 for row in audit_logs if row.get("request_id") == request_id)
@@ -136,7 +152,20 @@ class EvalRunner:
 
     def _default_report_path(self) -> str:
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-        return f"/tmp/mas_eval_report_{stamp}.json"
+        return str(self.eval_dir / f"mas_eval_report_{stamp}.json")
+
+    def _resolve_path(self, path_value: str) -> Path:
+        path = Path(path_value)
+        if not path.is_absolute():
+            path = self.eval_dir / path
+        resolved = path.resolve()
+        try:
+            resolved.relative_to(self.eval_dir)
+        except ValueError as exc:
+            raise ValueError(
+                f"evaluation paths must stay within {self.eval_dir}"
+            ) from exc
+        return resolved
 
     def _write_report(self, report_path: str, report: dict[str, object]) -> None:
         path = Path(report_path)
@@ -144,5 +173,11 @@ class EvalRunner:
         path.write_text(json.dumps(report, indent=2), encoding="utf-8")
 
 
-def run_eval_sync(orchestrator: Orchestrator, input_jsonl_path: str, output_report_path: str | None = None) -> dict[str, object]:
-    return asyncio.run(EvalRunner(orchestrator).run(input_jsonl_path, output_report_path))
+def run_eval_sync(
+    orchestrator: Orchestrator,
+    input_jsonl_path: str,
+    output_report_path: str | None = None,
+) -> dict[str, object]:
+    return asyncio.run(
+        EvalRunner(orchestrator).run(input_jsonl_path, output_report_path)
+    )

@@ -12,10 +12,14 @@ class BaseAgent(ABC):
     def __init__(self, spec: AgentSpec, tools: Mapping[str, Any]) -> None:
         unauthorized = set(tools) - set(spec.allowed_tools)
         if unauthorized:
-            raise ValueError(f"unauthorized tools for {spec.agent_id}: {sorted(unauthorized)}")
+            raise ValueError(
+                f"unauthorized tools for {spec.agent_id}: {sorted(unauthorized)}"
+            )
         self.spec = spec
         self.tools = dict(tools)
 
     @abstractmethod
-    async def run(self, task: TaskSpec, context: dict[str, Any] | None = None) -> TaskResult:
+    async def run(
+        self, task: TaskSpec, context: dict[str, Any] | None = None
+    ) -> TaskResult:
         raise NotImplementedError

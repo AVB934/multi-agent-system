@@ -1,11 +1,14 @@
 [project]
 name = "multi-agent-system"
 version = "0.1.0"
-description = "Add your description here"
+description = "A FastAPI service for orchestrating specialized agents through DAG-based workflows."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.129.0",
     "google-adk>=1.27.1",
+    "httpx>=0.28.1",
     "pydantic>=2.12.5",
+    "python-dotenv>=1.1.0",
+    "uvicorn[standard]>=0.34.0",
 ]
