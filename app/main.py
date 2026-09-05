@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from fastapi import FastAPI
 from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException
 
 from app.eval import EvalRunner
 from app.orchestrator import Orchestrator
@@ -24,10 +24,13 @@ async def query_endpoint(payload: QueryRequest) -> QueryResponse:
 
 @app.post("/eval", response_model=EvalResponse)
 async def eval_endpoint(payload: EvalRequest) -> EvalResponse:
-    result = await eval_runner.run(
-        input_jsonl_path=payload.input_jsonl_path,
-        output_report_path=payload.output_report_path,
-    )
+    try:
+        result = await eval_runner.run(
+            input_jsonl_path=payload.input_jsonl_path,
+            output_report_path=payload.output_report_path,
+        )
+    except (FileNotFoundError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     return EvalResponse(
         total_cases=int(result["total_cases"]),
         report_path=str(result["report_path"]),
